@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔️ Torneo Round Robin – Clash of Clans</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-light: #f0c96e;
+    --gold-dim: #7a5e25;
+    --bg-deep: #0a0806;
+    --bg-card: #1a1408;
+    --bg-card2: #221c0d;
+    --border: #3a2d10;
+    --border-bright: #6b4f1a;
+    --red-light: #e74c3c;
+    --green: #1e8449;
+    --text: #d4b483;
+    --text-dim: #7a6535;
+    --shadow-gold-sm: 0 0 8px rgba(201,168,76,0.2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--bg-deep);
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(126,184,212,0.03) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a84c' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    color: var(--text);
+    font-family: 'IM Fell English', serif;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* ── SYNC STATUS ── */
+  .sync-bar {
+    text-align: center;
+    padding: 6px 20px;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    background: rgba(0,0,0,0.4);
+    border-bottom: 1px solid var(--border);
+  }
+  .sync-dot {
+    display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin-right: 6px; vertical-align: middle;
+    background: #888;
+    transition: background 0.4s;
+  }
+  .sync-dot.ok { background: #27ae60; box-shadow: 0 0 6px #27ae60; }
+  .sync-dot.err { background: #e74c3c; box-shadow: 0 0 6px #e74c3c; }
+  .sync-dot.loading { background: var(--gold); box-shadow: 0 0 6px var(--gold); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .sync-text { color: var(--text-dim); vertical-align: middle; }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center; padding: 36px 20px 24px;
+    border-bottom: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  .header::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-crest {
+    font-size: 46px; display: block; margin-bottom: 8px;
+    filter: drop-shadow(0 0 16px rgba(201,168,76,0.6));
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  .header h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(20px, 4.5vw, 40px); font-weight: 700;
+    color: var(--gold-light);
+    text-shadow: 0 0 30px rgba(201,168,76,0.5), 0 2px 4px rgba(0,0,0,0.8);
+    letter-spacing: 3px;
+  }
+  .header-sub {
+    font-family: 'Cinzel', serif; font-size: 11px;
+    color: var(--gold-dim); letter-spacing: 5px; margin-top: 8px; text-transform: uppercase;
+  }
+
+  /* ── ADMIN TOGGLE ── */
+  .admin-bar {
+    text-align: center; padding: 10px 20px 0;
+  }
+  .admin-toggle {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; background: none;
+    border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text-dim); padding: 5px 14px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .admin-toggle:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .admin-toggle.active { border-color: var(--gold); color: var(--gold-light); background: rgba(201,168,76,0.07); }
+
+  /* ── TH SELECTOR ── */
+  .th-selector {
+    display: flex; justify-content: center; gap: 14px;
+    padding: 18px 20px 0; max-width: 680px; margin: 0 auto;
+  }
+  .th-btn {
+    flex: 1; font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700;
+    letter-spacing: 3px; text-transform: uppercase;
+    border: 2px solid var(--border-bright); border-radius: 10px;
+    background: var(--bg-card); color: var(--text-dim);
+    padding: 14px 16px; cursor: pointer; transition: all 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .th-btn::before {
+    content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.3s;
+  }
+  .th18-btn::before { background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.15) 0%, transparent 70%); }
+  .th17-btn::before { background: radial-gradient(ellipse at 50% 0%, rgba(126,184,212,0.15) 0%, transparent 70%); }
+  .th-btn:hover { color: var(--text); }
+  .th18-btn.active { border-color: #c9a84c; color: var(--gold-light); box-shadow: 0 0 20px rgba(201,168,76,0.25); }
+  .th17-btn.active { border-color: #7eb8d4; color: #a8d8ea; box-shadow: 0 0 20px rgba(126,184,212,0.2); }
+  .th-btn.active::before { opacity: 1; }
+  .th-btn-title { display: block; font-size: 16px; margin-bottom: 3px; }
+  .th-btn-sub { display: block; font-size: 9px; letter-spacing: 2px; opacity: 0.55; font-weight: 400; }
+
+  /* ── STATS ── */
+  .stats-bar {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    padding: 16px 20px 0; max-width: 1100px; margin: 0 auto;
+  }
+  .stat-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 11px 18px; text-align: center;
+    flex: 1; min-width: 110px; max-width: 170px;
+    position: relative; overflow: hidden;
+  }
+  .stat-box::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+  }
+  .stat-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 5px; }
+  .stat-value { font-family: 'Cinzel', serif; font-size: 25px; font-weight: 700; color: var(--gold-light); }
+  .stat-value span { font-size: 12px; color: var(--text-dim); }
+
+  /* ── PROGRESS ── */
+  .progress-wrap { max-width: 1100px; margin: 12px auto 0; padding: 0 20px; }
+  .progress-label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-align: right; margin-bottom: 4px; }
+  .progress-track { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; height: 7px; }
+  .progress-bar { height: 100%; background: linear-gradient(to right, var(--gold-dim), var(--gold-light)); transition: width 0.5s ease; box-shadow: 0 0 8px rgba(201,168,76,0.4); }
+
+  /* ── TABS ── */
+  .tabs { display: flex; justify-content: center; border-bottom: 1px solid var(--border); max-width: 1100px; margin: 14px auto 0; }
+  .tab-btn {
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    background: none; border: none; color: var(--text-dim); padding: 11px 26px; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.25s; position: relative; bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--gold); }
+  .tab-btn.active { color: var(--gold-light); border-bottom-color: var(--gold); background: linear-gradient(to bottom, rgba(201,168,76,0.05), transparent); }
+
+  /* ── CONTENT ── */
+  .content { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── SEARCH ── */
+  .search-bar { margin: 16px 0 10px; position: relative; }
+  .search-bar input {
+    width: 100%; background: var(--bg-card); border: 1px solid var(--border-bright);
+    border-radius: 6px; color: var(--gold-light); font-family: 'Cinzel', serif;
+    font-size: 13px; letter-spacing: 1px; padding: 11px 44px 11px 15px; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-bar input:focus { border-color: var(--gold); box-shadow: var(--shadow-gold-sm); }
+  .search-bar input::placeholder { color: var(--text-dim); }
+  .search-icon { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 16px; pointer-events: none; }
+  .filter-info { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px; color: var(--text-dim); margin-bottom: 10px; }
+
+  /* ── ATTACKER GROUP ── */
+  .attacker-group { margin-bottom: 20px; }
+  .attacker-header {
+    font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 3px; color: var(--gold); text-transform: uppercase;
+    padding: 9px 13px;
+    background: linear-gradient(to right, rgba(201,168,76,0.08), transparent);
+    border-left: 3px solid var(--gold); border-bottom: 1px solid var(--border);
+    margin-bottom: 6px; border-radius: 0 4px 4px 0;
+  }
+
+  /* ── MATCH CARD ── */
+  .match-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 7px; padding: 10px 14px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .match-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--border-bright); transition: background 0.2s; }
+  .match-card.done::before { background: var(--green); }
+  .match-card.done { background: rgba(26,132,73,0.05); border-color: rgba(39,174,96,0.2); }
+  .match-card:hover:not(.done) { border-color: var(--border-bright); }
+
+  .match-num { font-family: 'Cinzel', serif; font-size: 9px; color: var(--text-dim); min-width: 26px; letter-spacing: 1px; }
+  .match-players { flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 180px; }
+  .player-name { font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600; color: var(--gold-light); letter-spacing: 0.5px; }
+  .player-name.defender { color: var(--text); font-weight: 400; font-size: 12px; }
+  .att-badge { font-family: 'Cinzel', serif; font-size: 8px; color: #e67e22; letter-spacing: 1px; font-weight: 700; padding: 2px 5px; border: 1px solid rgba(230,126,34,0.35); border-radius: 3px; background: rgba(230,126,34,0.1); }
+
+  /* ── RESULT INPUT (admin only) ── */
+  .result-area { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .result-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .result-group label { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+  .star-input, .time-input {
+    background: var(--bg-card2); border: 1px solid var(--border-bright); border-radius: 4px;
+    color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 13px;
+    text-align: center; outline: none; transition: border-color 0.2s; padding: 5px 4px;
+  }
+  .star-input { width: 50px; }
+  .time-input { width: 66px; font-size: 11px; }
+  .star-input:focus, .time-input:focus { border-color: var(--gold); }
+  .save-btn {
+    background: linear-gradient(135deg, #3a2d10, #5a4420); border: 1px solid var(--gold-dim);
+    border-radius: 5px; color: var(--gold-light); font-family: 'Cinzel', serif;
+    font-size: 9px; letter-spacing: 2px; cursor: pointer; padding: 7px 13px;
+    text-transform: uppercase; transition: all 0.2s; white-space: nowrap;
+  }
+  .save-btn:hover { background: linear-gradient(135deg, #5a4420, #7a5e25); border-color: var(--gold); color: #fff; }
+
+  /* ── RESULT DISPLAY ── */
+  .result-display { display: none; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .match-card.done .result-display { display: flex; }
+  .match-card.done .result-area { display: none; }
+  /* in read-only mode, never show input area */
+  body.readonly .result-area { display: none !important; }
+  body.readonly .edit-btn { display: none !important; }
+
+  .stars-shown { font-size: 13px; letter-spacing: 1px; }
+  .time-shown { font-family: 'Cinzel', serif; font-size: 10px; color: var(--text-dim); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px; }
+  .edit-btn { background: none; border: none; color: var(--text-dim); font-size: 12px; cursor: pointer; padding: 2px 5px; transition: color 0.2s; }
+  .edit-btn:hover { color: var(--gold); }
+
+  /* pending card (no result, read-only) */
+  .match-card.pending-ro .result-area { display: none !important; }
+
+  /* ── LEADERBOARD ── */
+  .leaderboard { margin-top: 16px; }
+  .leaderboard-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .leaderboard-table thead tr { background: linear-gradient(to right, rgba(201,168,76,0.1), rgba(201,168,76,0.04)); border-bottom: 1px solid var(--border-bright); }
+  .leaderboard-table th { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--gold-dim); text-transform: uppercase; padding: 13px 14px; text-align: center; }
+  .leaderboard-table th:first-child { text-align: left; }
+  .leaderboard-table td { padding: 11px 14px; border-bottom: 1px solid rgba(58,45,16,0.4); font-family: 'Cinzel', serif; font-size: 12px; color: var(--text); text-align: center; }
+  .leaderboard-table td:first-child { text-align: left; }
+  .leaderboard-table tbody tr:last-child td { border-bottom: none; }
+  .leaderboard-table tbody tr:hover { background: rgba(201,168,76,0.03); }
+  .leaderboard-table tbody tr.rank-1 { background: rgba(201,168,76,0.07); }
+  .leaderboard-table tbody tr.rank-2 { background: rgba(192,192,192,0.04); }
+  .leaderboard-table tbody tr.rank-3 { background: rgba(205,127,50,0.04); }
+  .rank-badge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; margin-right: 6px; }
+  .rank-1 .rank-badge { background: rgba(201,168,76,0.25); color: var(--gold-light); border: 1px solid var(--gold); }
+  .rank-2 .rank-badge { background: rgba(192,192,192,0.18); color: #d0d0d0; border: 1px solid #888; }
+  .rank-3 .rank-badge { background: rgba(205,127,50,0.18); color: #cd7f32; border: 1px solid #cd7f32; }
+  .ldr-name { font-weight: 600; color: var(--gold-light); }
+  .ldr-stars { color: #f1c40f; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--bg-card2); border: 1px solid var(--gold-dim); border-radius: 8px;
+    color: var(--gold-light); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1px;
+    padding: 12px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    z-index: 999; opacity: 0; pointer-events: none; transform: translateY(8px); transition: all 0.3s;
+  }
+  .toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 3px; }
+
+  @media(max-width:600px) {
+    .match-card { flex-direction: column; align-items: flex-start; }
+    .leaderboard-table th, .leaderboard-table td { padding: 8px 6px; font-size: 10px; }
+  }
+</style>
+</head>
+<body class="readonly">
+
+<!-- SYNC STATUS -->
+<div class="sync-bar">
+  <span class="sync-dot loading" id="sync-dot"></span>
+  <span class="sync-text" id="sync-text">Connessione a Firebase...</span>
+</div>
+
+<div class="header">
+  <span class="header-crest">⚔️</span>
+  <h1>Gran Torneo di Clan</h1>
+  <div class="header-sub">Round Robin · Ogni guerriero attacca tutti gli altri</div>
+</div>
+
+<!-- ADMIN TOGGLE -->
+<div class="admin-bar">
+  <button class="admin-toggle" id="admin-toggle-btn" onclick="toggleAdmin()">🔐 Modalità Admin</button>
+</div>
+
+<!-- TH SELECTOR -->
+<div class="th-selector">
+  <button class="th-btn th18-btn active" onclick="selectTH(18, this)">
+    <span class="th-btn-title">🏰 Municipio 18</span>
+    <span class="th-btn-sub">8 Guerrieri · 56 Scontri</span>
+  </button>
+  <button class="th-btn th17-btn" onclick="selectTH(17, this)">
+    <span class="th-btn-title">🏯 Municipio 17</span>
+    <span class="th-btn-sub">6 Guerrieri · 30 Scontri</span>
+  </button>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-box"><div class="stat-label">Scontri Totali</div><div class="stat-value" id="stat-total">56</div></div>
+  <div class="stat-box"><div class="stat-label">Completati</div><div class="stat-value" id="stat-done">0</div></div>
+  <div class="stat-box"><div class="stat-label">Rimanenti</div><div class="stat-value" id="stat-rem">56</div></div>
+  <div class="stat-box"><div class="stat-label">Avanzamento</div><div class="stat-value" id="stat-pct">0<span>%</span></div></div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-label" id="prog-label">0 / 56 scontri completati</div>
+  <div class="progress-track"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('scontri', this)">⚔️ Scontri</button>
+  <button class="tab-btn" onclick="switchTab('classifica', this)">🏆 Classifica</button>
+</div>
+
+<div class="content">
+  <div id="tab-scontri" class="section active">
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="Cerca guerriero..." oninput="renderMatches()">
+      <span class="search-icon">🔍</span>
+    </div>
+    <div class="filter-info" id="filter-info"></div>
+    <div id="matches-container"></div>
+  </div>
+  <div id="tab-classifica" class="section">
+    <div class="leaderboard">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Guerriero</th>
+            <th>Att.</th>
+            <th>⭐ Stelle Tot.</th>
+            <th>⏱ Tempo Tot.</th>
+            <th>⏱ Media</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── FIREBASE CONFIG ────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyDgpiGF91i0_Lu5hfBSzYHx93Ew068VMfA",
+  authDomain: "coc-torneo.firebaseapp.com",
+  projectId: "coc-torneo",
+  storageBucket: "coc-torneo.firebasestorage.app",
+  messagingSenderId: "422190018912",
+  appId: "1:422190018912:web:b043dceac531a84f38ee05"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ── TOURNAMENT DATA ────────────────────────────────────────────────────────
+const TOURNAMENTS = {
+  18: {
+    players: ['EDO','Frodo','Realmola','Francesco','Darkshines','Enticos','Abaritte','Oxymoron'],
+    label: 'TH18', matches: []
+  },
+  17: {
+    players: ['Antitesi','dam100','Spyro','LittleAbaritte','Febinho','Vincy77'],
+    label: 'TH17', matches: []
+  }
+};
+
+// Directed round-robin: attacker (p1) attacks every other player once
+// N players → N*(N-1) matches
+function generateMatches(players) {
+  const matches = [];
+  let id = 1;
+  for (let i = 0; i < players.length; i++)
+    for (let j = 0; j < players.length; j++) {
+      if (i === j) continue;
+      matches.push({ id: id++, p1: players[i], p2: players[j], result: null });
+    }
+  return matches;
+}
+TOURNAMENTS[18].matches = generateMatches(TOURNAMENTS[18].players);
+TOURNAMENTS[17].matches = generateMatches(TOURNAMENTS[17].players);
+
+let currentTH = 18;
+let isAdmin = false;
+const ADMIN_PASSWORD = 'clan2025'; // ← cambia questa password come vuoi
+
+// ── ADMIN ──────────────────────────────────────────────────────────────────
+window.toggleAdmin = function() {
+  if (isAdmin) {
+    isAdmin = false;
+    document.body.classList.add('readonly');
+    document.getElementById('admin-toggle-btn').classList.remove('active');
+    document.getElementById('admin-toggle-btn').textContent = '🔐 Modalità Admin';
+    showToast('🔒 Modalità lettura attiva');
+    renderMatches();
+    return;
+  }
+  const pwd = prompt('🔐 Inserisci la password admin:');
+  if (pwd === ADMIN_PASSWORD) {
+    isAdmin = true;
+    document.body.classList.remove('readonly');
+    document.getElementById('admin-toggle-btn').classList.add('active');
+    document.getElementById('admin-toggle-btn').textContent = '🔓 Admin attivo';
+    showToast('⚔️ Modalità admin attivata!');
+    renderMatches();
+  } else if (pwd !== null) {
+    showToast('❌ Password errata!');
+  }
+};
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function starsHtml(n) {
+  let s = '';
+  for (let i = 0; i < n; i++) s += '⭐';
+  for (let i = n; i < 3; i++) s += '<span style="opacity:.18">⭐</span>';
+  return s;
+}
+function timeToSec(t) {
+  if (!t || !t.trim()) return Infinity;
+  const parts = t.split(':').map(Number);
+  if (parts.length === 2) return parts[0]*60 + parts[1];
+  if (parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+  return Infinity;
+}
+function secToTime(s) {
+  if (s === 0) return '0:00';
+  if (!s || s === Infinity) return '—';
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-text');
+  dot.className = 'sync-dot ' + state;
+  txt.textContent = text;
+}
+
+// ── FIRESTORE LISTENER ─────────────────────────────────────────────────────
+// One document per match, path: results/{th18|th17}/matches/{matchId}
+function startListening(th) {
+  const t = TOURNAMENTS[th];
+  const colRef = collection(db, `results_th${th}`);
+
+  setSyncStatus('loading', 'Sincronizzazione...');
+
+  onSnapshot(colRef, (snapshot) => {
+    // Reset all results for this th
+    t.matches.forEach(m => m.result = null);
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      const m = t.matches.find(x => x.id === data.id);
+      if (m) m.result = data.result || null;
+    });
+    setSyncStatus('ok', 'Sincronizzato · ' + new Date().toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'}));
+    renderMatches();
+    updateStats();
+    updateLeaderboard();
+  }, (err) => {
+    console.error(err);
+    setSyncStatus('err', 'Errore connessione Firebase');
+  });
+}
+
+// Start listeners for both tournaments immediately (so classifica is always fresh)
+startListening(18);
+startListening(17);
+
+// ── SAVE TO FIRESTORE ──────────────────────────────────────────────────────
+async function saveToFirestore(th, matchId, result) {
+  const docRef = doc(db, `results_th${th}`, String(matchId));
+  await setDoc(docRef, { id: matchId, result });
+}
+async function clearFromFirestore(th, matchId) {
+  const docRef = doc(db, `results_th${th}`, String(matchId));
+  await setDoc(docRef, { id: matchId, result: null });
+}
+
+// ── TH SELECTION ───────────────────────────────────────────────────────────
+window.selectTH = function(th, btn) {
+  currentTH = th;
+  document.querySelectorAll('.th-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('search-input').value = '';
+  renderMatches();
+  updateStats();
+  updateLeaderboard();
+};
+
+// ── TABS ───────────────────────────────────────────────────────────────────
+window.switchTab = function(tab, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'classifica') updateLeaderboard();
+};
+
+// ── STATS ──────────────────────────────────────────────────────────────────
+function updateStats() {
+  const t = TOURNAMENTS[currentTH];
+  const total = t.matches.length;
+  const done = t.matches.filter(m => m.result).length;
+  const pct = Math.round(done / total * 100);
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-rem').textContent = total - done;
+  document.getElementById('stat-pct').innerHTML = pct + '<span>%</span>';
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = `${done} / ${total} scontri completati`;
+}
+
+// ── RENDER MATCHES ─────────────────────────────────────────────────────────
+function renderMatches() {
+  const t = TOURNAMENTS[currentTH];
+  const container = document.getElementById('matches-container');
+  container.innerHTML = '';
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  let totalShown = 0;
+
+  t.players.forEach(attacker => {
+    const matches = t.matches.filter(m => m.p1 === attacker);
+    const visible = matches.filter(m =>
+      !q || m.p1.toLowerCase().includes(q) || m.p2.toLowerCase().includes(q)
+    );
+    if (!visible.length) return;
+    totalShown += visible.length;
+
+    const group = document.createElement('div');
+    group.className = 'attacker-group';
+    group.innerHTML = `<div class="attacker-header">⚔️ Attacchi di ${attacker}</div>`;
+    visible.forEach(m => group.appendChild(buildCard(m)));
+    container.appendChild(group);
+  });
+
+  document.getElementById('filter-info').textContent = q
+    ? `Trovati ${totalShown} scontri per "${q}"`
+    : `${t.label} · ${t.matches.length} scontri totali`;
+}
+
+function buildCard(m) {
+  const th = currentTH;
+  const card = document.createElement('div');
+  card.className = 'match-card' + (m.result ? ' done' : '');
+  card.id = `card-${m.id}-${th}`;
+
+  // Result display (always shown when done)
+  let rdHtml = '';
+  if (m.result) {
+    const r = m.result;
+    rdHtml = `
+      <div class="result-display" id="rd-${m.id}-${th}" style="display:flex">
+        <span class="stars-shown">${starsHtml(r.s1)}</span>
+        ${r.t1 ? `<span class="time-shown">⏱ ${r.t1}</span>` : ''}
+        <span style="color:var(--text-dim);font-size:9px;font-family:'Cinzel',serif">su 🛡️ ${m.p2}</span>
+        <button class="edit-btn" onclick="window.editMatch(${m.id}, ${th})" title="Modifica">✏️</button>
+      </div>`;
+  }
+
+  // Input area (admin only, hidden when done)
+  const inputHidden = m.result ? ' style="display:none"' : '';
+  const inputHtml = `
+    <div class="result-area" id="ra-${m.id}-${th}"${inputHidden}>
+      <div class="result-group">
+        <label>⭐ Stelle</label>
+        <input class="star-input" type="number" min="0" max="3" placeholder="0-3" id="s1-${m.id}-${th}">
+      </div>
+      <div class="result-group">
+        <label>⏱ Tempo</label>
+        <input class="time-input" type="text" placeholder="3:00" id="t1-${m.id}-${th}">
+      </div>
+      <button class="save-btn" onclick="window.saveMatch(${m.id}, ${th})">Salva</button>
+    </div>`;
+
+  card.innerHTML = `
+    <span class="match-num">#${String(m.id).padStart(2,'0')}</span>
+    <div class="match-players">
+      <span class="player-name">⚔️ ${m.p1}</span>
+      <span class="att-badge">ATT</span>
+      <span class="player-name defender">🛡️ ${m.p2}</span>
+    </div>
+    ${inputHtml}
+    ${rdHtml}
+  `;
+  return card;
+}
+
+// ── SAVE / EDIT ────────────────────────────────────────────────────────────
+window.saveMatch = async function(id, th) {
+  if (!isAdmin) return;
+  const m = TOURNAMENTS[th].matches.find(x => x.id === id);
+  const s1 = parseInt(document.getElementById(`s1-${id}-${th}`).value);
+  const t1 = document.getElementById(`t1-${id}-${th}`).value.trim();
+  if (isNaN(s1) || s1 < 0 || s1 > 3) {
+    showToast('⚠️ Stelle non valide (0 – 3)!');
+    return;
+  }
+  const result = { s1, t1 };
+  setSyncStatus('loading', 'Salvataggio...');
+  try {
+    await saveToFirestore(th, id, result);
+    showToast('⚔️ Risultato salvato!');
+  } catch(e) {
+    setSyncStatus('err', 'Errore salvataggio');
+    showToast('❌ Errore: ' + e.message);
+  }
+};
+
+window.editMatch = async function(id, th) {
+  if (!isAdmin) return;
+  setSyncStatus('loading', 'Modifica...');
+  try {
+    await clearFromFirestore(th, id);
+    showToast('✏️ Risultato rimosso');
+    setTimeout(() => {
+      const c = document.getElementById(`card-${id}-${th}`);
+      if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  } catch(e) {
+    setSyncStatus('err', 'Errore modifica');
+    showToast('❌ Errore: ' + e.message);
+  }
+};
+
+// ── LEADERBOARD ────────────────────────────────────────────────────────────
+function updateLeaderboard() {
+  const t = TOURNAMENTS[currentTH];
+  const stats = {};
+  t.players.forEach(p => { stats[p] = { played: 0, stars: 0, totalSec: 0 }; });
+  t.matches.forEach(m => {
+    if (!m.result) return;
+    stats[m.p1].played++;
+    stats[m.p1].stars += m.result.s1;
+    const sec = timeToSec(m.result.t1);
+    stats[m.p1].totalSec += sec === Infinity ? 0 : sec;
+  });
+
+  const sorted = t.players.slice().sort((a, b) => {
+    if (stats[b].stars !== stats[a].stars) return stats[b].stars - stats[a].stars;
+    return stats[a].totalSec - stats[b].totalSec;
+  });
+
+  const tbody = document.getElementById('leaderboard-body');
+  tbody.innerHTML = '';
+  sorted.forEach((p, i) => {
+    const s = stats[p];
+    const rank = i + 1;
+    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+    const badge = rank <= 3
+      ? `<span class="rank-badge">${rank}</span>`
+      : `<span style="color:var(--text-dim);margin-right:6px;font-size:10px">${rank}</span>`;
+    const tr = document.createElement('tr');
+    if (rankClass) tr.className = rankClass;
+    tr.innerHTML = `
+      <td>${badge}<span class="ldr-name">${p}</span></td>
+      <td style="color:var(--text-dim);font-size:11px">${s.played} / ${t.players.length - 1}</td>
+      <td><span class="ldr-stars">⭐</span> <strong style="color:var(--gold-light)">${s.stars}</strong></td>
+      <td style="font-size:11px">${s.played > 0 ? secToTime(s.totalSec) : '—'}</td>
+      <td style="font-size:11px;color:var(--text-dim)">${s.played > 0 ? secToTime(Math.round(s.totalSec/s.played)) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+</script>
+</body>
+</html>
