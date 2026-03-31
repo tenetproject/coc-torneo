@@ -815,7 +815,7 @@ function renderCalendar() {
     const card = document.createElement('div');
     card.className = 'slot-card';
     const matchPills = slot.pairs.map(pair =>
-      `<div class="slot-match-pill"><strong>${pair[0]}</strong> ↔ <strong>${pair[1]}</strong></div>`
+      `<div class="slot-match-pill"><strong>${pair.a}</strong> ↔ <strong>${pair.b}</strong></div>`
     ).join('');
     card.innerHTML = `
       <div class="slot-header">
@@ -1034,7 +1034,7 @@ window.generateCalendar = async function() {
   for (let round = 0; round < n - 1; round++) {
     const pairs = [];
     for (let k = 0; k < Math.floor(n / 2); k++) {
-      pairs.push([players[lst[k]], players[lst[n-1-k]]]);
+      pairs.push({ a: players[lst[k]], b: players[lst[n-1-k]] });
     }
     slots.push(pairs);
     // Rotate keeping first fixed
