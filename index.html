@@ -805,7 +805,7 @@ function renderCalendar() {
     container.innerHTML = '<div class="calendar-empty">Nessun torneo selezionato.</div>';
     return;
   }
-  const cal = tournaments[currentTH].calendar || [];
+  const cal = (tournaments[currentTH].calendar || []).filter(s => s && s.pairs && s.pairs.length);
   if (!cal.length) {
     container.innerHTML = '<div class="calendar-empty">Nessun calendario generato per questo torneo.<br><span style="font-size:10px">Generalo dalla sezione Admin.</span></div>';
     return;
@@ -1105,4 +1105,3 @@ await loadTournaments();
 </script>
 </body>
 </html>
-
